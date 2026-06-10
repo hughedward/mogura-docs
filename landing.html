@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mogura — Subtitles for your Mac, entirely offline</title>
+<meta name="description" content="Mogura transcribes video and audio into subtitles with on-device Whisper. Nothing is uploaded. A one-time purchase for macOS.">
+<link rel="icon" href="icon.png">
+<style>
+  :root {
+    --bg: #fbfbfd;
+    --surface: #ffffff;
+    --ink: #1d1d1f;
+    --ink-soft: #51515a;
+    --ink-faint: #86868b;
+    --line: #e7e7ec;
+    --accent: #2563eb;
+    --accent-soft: #eaf1ff;
+    --video: #0b0b0f;
+    --radius: 18px;
+    --maxw: 1080px;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "PingFang SC", sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.55;
+  }
+  a { color: inherit; text-decoration: none; }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- nav ---------- */
+  nav {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  }
+  .nav-in { display: flex; align-items: center; justify-content: space-between; height: 56px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: -0.01em; }
+  .mark { width: 28px; height: 28px; display: block;
+    filter: drop-shadow(0 2px 5px rgba(20,20,40,.20)); }
+  .nav-links { display: flex; gap: 28px; align-items: center; font-size: 14px; color: var(--ink-soft); }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-cta { font-size: 13.5px; font-weight: 600; color: var(--accent); }
+  @media (max-width: 640px){ .nav-links a:not(.nav-cta){ display:none; } }
+
+  /* ---------- hero ---------- */
+  header.hero { padding: clamp(64px, 12vw, 132px) 0 clamp(40px, 7vw, 72px); text-align: center; position: relative; overflow: hidden; }
+  .hero::before { content:""; position:absolute; inset:-20% 0 auto 0; height: 420px;
+    background: radial-gradient(60% 80% at 50% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 70%);
+    pointer-events:none; }
+  .eyebrow { display:inline-block; font-size: 13px; font-weight: 600; letter-spacing: .02em;
+    color: var(--accent); background: var(--accent-soft); padding: 5px 12px; border-radius: 999px; }
+  h1 { font-size: clamp(38px, 6.5vw, 72px); line-height: 1.04; letter-spacing: -0.035em; font-weight: 700;
+    margin: 22px auto 0; max-width: 14ch; }
+  h1 .soft { color: var(--ink-faint); }
+  .sub { font-size: clamp(17px, 2.2vw, 21px); color: var(--ink-soft); max-width: 36ch; margin: 20px auto 0; }
+  .cta-row { display:flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 34px; }
+  .btn { font-size: 15px; font-weight: 600; padding: 12px 22px; border-radius: 12px; transition: transform .15s ease, background .15s ease, box-shadow .15s ease; }
+  .btn-primary { background: var(--ink); color: #fff; box-shadow: 0 6px 20px rgba(0,0,0,.16); }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 26px rgba(0,0,0,.22); }
+  .btn-ghost { color: var(--ink); border: 1px solid var(--line); background: var(--surface); }
+  .btn-ghost:hover { border-color: #c9c9d2; }
+  .note { margin-top: 16px; font-size: 13px; color: var(--ink-faint); }
+
+  /* ---------- app window mock (pure CSS) ---------- */
+  .shot { margin: clamp(40px,7vw,72px) auto 0; max-width: 940px; }
+  .win { border-radius: 16px; overflow: hidden; background: var(--surface);
+    border: 1px solid var(--line); box-shadow: 0 40px 80px -32px rgba(20,20,40,.34), 0 8px 24px -12px rgba(20,20,40,.18); }
+  .titlebar { height: 38px; display:flex; align-items:center; gap: 8px; padding: 0 14px;
+    background: linear-gradient(#f7f7fa,#f1f1f5); border-bottom: 1px solid var(--line); }
+  .dot { width: 11px; height: 11px; border-radius: 50%; }
+  .dot.r{background:#ff5f57} .dot.y{background:#febc2e} .dot.g{background:#28c840}
+  .titlebar .name { margin-left: 8px; font-size: 12px; color: var(--ink-faint); }
+  .panes { display: grid; grid-template-columns: 170px 1fr 260px; min-height: 320px; }
+  .pane { padding: 14px; }
+  .pane.side { border-right: 1px solid var(--line); background: #f7f7fa; }
+  .pane.center { padding: 16px; }
+  .pane.tx { border-left: 1px solid var(--line); }
+  .lbl { font-size: 11px; font-weight: 700; letter-spacing: .04em; color: var(--ink-faint); text-transform: uppercase; }
+  .file { margin-top: 12px; padding: 10px; border-radius: 9px; background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent); }
+  .file .t { height: 8px; width: 78%; border-radius: 4px; background: color-mix(in srgb, var(--accent) 55%, #fff); }
+  .file .s { height: 6px; width: 46%; border-radius: 4px; background: color-mix(in srgb, var(--accent) 30%, #fff); margin-top: 7px; }
+  .video { aspect-ratio: 16/9; border-radius: 12px; background:
+      radial-gradient(120% 120% at 30% 20%, #2a2a36, var(--video)); position: relative; overflow:hidden; }
+  .video .cap { position:absolute; left:50%; bottom: 14px; transform: translateX(-50%);
+    font-size: 12.5px; color:#fff; background: rgba(0,0,0,.42); padding: 4px 10px; border-radius: 7px; white-space: nowrap; }
+  .scrub { margin-top: 12px; height: 4px; border-radius: 3px; background: var(--line); position: relative; }
+  .scrub::before { content:""; position:absolute; inset:0 38% 0 0; background: var(--accent); border-radius: 3px; }
+  .scrub::after { content:""; position:absolute; left: 62%; top:50%; width: 11px; height:11px; border-radius:50%; background:#fff; box-shadow:0 0 0 1px var(--line); transform: translate(-50%,-50%); }
+  .line { margin-top: 12px; }
+  .line .time { height: 6px; width: 40%; border-radius: 4px; background: var(--line); }
+  .line .txt { height: 8px; border-radius: 4px; background: #e2e2e9; margin-top: 6px; }
+  .line .txt.s2 { width: 70%; }
+  .line.active { background: var(--accent-soft); margin: 8px -10px 0; padding: 8px 10px; border-radius: 9px; border-left: 3px solid var(--accent); }
+  .line.active .time { background: color-mix(in srgb, var(--accent) 45%, #fff); width: 52%; }
+  .line.active .txt { background: color-mix(in srgb, var(--accent) 30%, #fff); }
+  @media (max-width: 720px){ .panes{ grid-template-columns: 1fr; } .pane.side,.pane.tx{ display:none; } }
+
+  /* ---------- features ---------- */
+  section.features { padding: clamp(72px, 12vw, 130px) 0; }
+  .feat { display: grid; grid-template-columns: 1.05fr 1fr; gap: clamp(28px, 6vw, 80px); align-items: center;
+    padding: clamp(36px, 6vw, 64px) 0; border-top: 1px solid var(--line); }
+  .feat:nth-child(even) .feat-art { order: -1; }
+  .feat h2 { font-size: clamp(26px, 3.6vw, 40px); letter-spacing: -0.028em; line-height: 1.1; margin: 14px 0 0; }
+  .feat p { font-size: 17px; color: var(--ink-soft); margin: 14px 0 0; max-width: 42ch; }
+  .kicker { font-size: 13px; font-weight: 700; letter-spacing: .02em; color: var(--accent); }
+  .feat-art { aspect-ratio: 4/3; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface);
+    display: grid; place-items: center; overflow: hidden; position: relative; }
+  /* art: waveform → text */
+  .art-wave { display:flex; align-items:center; gap: 6px; height: 64px; }
+  .art-wave i { width: 6px; border-radius: 3px; background: var(--accent); opacity:.85; }
+  /* art: synced lines */
+  .art-lines { width: 74%; }
+  .art-lines .l { height: 10px; border-radius: 5px; background: #e3e3ea; margin: 12px 0; }
+  .art-lines .l.on { background: var(--accent); width: 86%; box-shadow: 0 6px 16px -6px rgba(37,99,235,.5); }
+  /* art: export chips */
+  .chips { display:flex; gap: 12px; }
+  .chip { font-weight: 700; font-size: 15px; color: var(--accent); background: var(--accent-soft);
+    border:1px solid color-mix(in srgb, var(--accent) 22%, transparent); padding: 12px 16px; border-radius: 12px; }
+  /* art: shield/lock */
+  .lock { width: 78px; height: 92px; border-radius: 16px; border: 2px solid var(--accent); position: relative; background: var(--accent-soft); }
+  .lock::before { content:""; position:absolute; left:50%; top:-22px; transform:translateX(-50%); width: 40px; height: 40px; border: 7px solid var(--accent); border-bottom: none; border-radius: 22px 22px 0 0; }
+  .lock::after { content:""; position:absolute; left:50%; top:34px; transform:translateX(-50%); width: 14px; height: 18px; border-radius: 4px; background: var(--accent); }
+  @media (max-width: 720px){ .feat{ grid-template-columns: 1fr; } .feat:nth-child(even) .feat-art{ order: 0; } }
+
+  /* ---------- pricing ---------- */
+  section.price { text-align: center; padding: clamp(72px,12vw,120px) 0; background:
+      linear-gradient(180deg, transparent, color-mix(in srgb, var(--accent) 5%, transparent)); }
+  .price h2 { font-size: clamp(28px, 4vw, 46px); letter-spacing: -0.03em; margin: 0; }
+  .price .amount { font-size: clamp(40px, 7vw, 64px); font-weight: 700; letter-spacing: -0.04em; margin: 18px 0 4px; }
+  .price .amount span { font-size: .42em; color: var(--ink-faint); font-weight: 600; letter-spacing: 0; }
+  .price p { color: var(--ink-soft); font-size: 17px; margin: 4px 0 0; }
+
+  /* ---------- footer ---------- */
+  footer { border-top: 1px solid var(--line); padding: 40px 0; color: var(--ink-faint); font-size: 13.5px; }
+  .foot-in { display:flex; align-items:center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .foot-links { display:flex; gap: 22px; }
+  .foot-links a:hover { color: var(--ink); }
+
+  /* ---------- motion ---------- */
+  .reveal { opacity: 0; transform: translateY(14px); animation: rise .8s cubic-bezier(.2,.7,.2,1) forwards; }
+  .d1{animation-delay:.05s}.d2{animation-delay:.13s}.d3{animation-delay:.22s}.d4{animation-delay:.32s}.d5{animation-delay:.44s}
+  @keyframes rise { to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce){ .reveal{ animation:none; opacity:1; transform:none; } html{scroll-behavior:auto;} }
+
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0e0e11; --surface:#161619; --ink:#f5f5f7; --ink-soft:#b9b9c2; --ink-faint:#86868b;
+      --line:#2a2a31; --accent:#5b8cff; --accent-soft:#16213b; --video:#000; color-scheme: dark; }
+    .btn-primary{ background:#f5f5f7; color:#0e0e11; }
+    .titlebar{ background: linear-gradient(#1b1b20,#161619); }
+    .pane.side{ background:#131316; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a class="brand" href="#"><img class="mark" src="icon.png" alt="Mogura icon">Mogura</a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#privacy">Privacy</a>
+      <a href="support.html">Support</a>
+      <!-- Replace # with your Mac App Store URL once the app is live -->
+      <a class="nav-cta" href="#">Get the app ↗</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="eyebrow reveal d1">For macOS</span>
+    <h1 class="reveal d2">Subtitles for your Mac. <span class="soft">Entirely offline.</span></h1>
+    <p class="sub reveal d3">Mogura turns video and audio into subtitles using on-device Whisper. Nothing is uploaded — your media never leaves your Mac. Buy once, no subscription.</p>
+    <div class="cta-row reveal d4">
+      <!-- Replace # with your Mac App Store URL once the app is live -->
+      <a class="btn btn-primary" href="#">Download on the Mac App Store</a>
+      <a class="btn btn-ghost" href="#features">See how it works</a>
+    </div>
+    <p class="note reveal d4">macOS 14 or later · One-time purchase</p>
+
+    <div class="shot reveal d5">
+      <div class="win">
+        <div class="titlebar">
+          <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="name">Stanford-speech.mp4 — Mogura</span>
+        </div>
+        <div class="panes">
+          <div class="pane side">
+            <div class="lbl">Projects</div>
+            <div class="file"><div class="t"></div><div class="s"></div></div>
+          </div>
+          <div class="pane center">
+            <div class="video"><span class="cap">You've got to find what you love.</span></div>
+            <div class="scrub"></div>
+          </div>
+          <div class="pane tx">
+            <div class="lbl">Transcript</div>
+            <div class="line"><div class="time"></div><div class="txt"></div></div>
+            <div class="line active"><div class="time"></div><div class="txt"></div><div class="txt s2" style="margin-top:6px"></div></div>
+            <div class="line"><div class="time"></div><div class="txt"></div></div>
+            <div class="line"><div class="time"></div><div class="txt s2"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="features wrap" id="features">
+
+  <div class="feat">
+    <div>
+      <div class="kicker">Transcribe</div>
+      <h2>On-device Whisper, accelerated by Metal.</h2>
+      <p>Drop in a video or audio file and get accurate, timed subtitles automatically. Choose a Small model for speed or a Large one for the best accuracy — it all runs locally, with automatic language detection.</p>
+    </div>
+    <div class="feat-art">
+      <div class="art-wave">
+        <i style="height:18px"></i><i style="height:40px"></i><i style="height:26px"></i><i style="height:58px"></i><i style="height:34px"></i><i style="height:48px"></i><i style="height:20px"></i><i style="height:52px"></i><i style="height:30px"></i><i style="height:44px"></i><i style="height:16px"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="feat">
+    <div>
+      <div class="kicker">Edit</div>
+      <h2>A transcript that follows along.</h2>
+      <p>Review and fix subtitles in a clean editor that stays in sync with playback. Click any line to jump there; the active line highlights as the video plays. Keyboard controls keep editing fast and focused.</p>
+    </div>
+    <div class="feat-art">
+      <div class="art-lines">
+        <div class="l"></div><div class="l on"></div><div class="l"></div><div class="l" style="width:60%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="feat">
+    <div>
+      <div class="kicker">Export</div>
+      <h2>SRT, VTT, ASS — ready for anywhere.</h2>
+      <p>Export clean, standard subtitle files for YouTube, Premiere Pro, Final Cut, and most editors and players. What you see is exactly what ships out.</p>
+    </div>
+    <div class="feat-art">
+      <div class="chips"><span class="chip">SRT</span><span class="chip">VTT</span><span class="chip">ASS</span></div>
+    </div>
+  </div>
+
+  <div class="feat" id="privacy">
+    <div>
+      <div class="kicker">Private by design</div>
+      <h2>Your media stays on your Mac.</h2>
+      <p>100% offline transcription. Mogura collects nothing and uploads nothing — the network is used only to download the model you choose. Sandboxed and built to Apple's privacy standards.</p>
+    </div>
+    <div class="feat-art"><div class="lock"></div></div>
+  </div>
+
+</section>
+
+<section class="price">
+  <div class="wrap">
+    <h2>Buy once. Use it forever.</h2>
+    <div class="amount">$9.99 <span>· one-time</span></div>
+    <p>No subscriptions, ever.</p>
+    <div class="cta-row" style="margin-top:28px">
+      <!-- Replace # with your Mac App Store URL once the app is live -->
+      <a class="btn btn-primary" href="#">Download on the Mac App Store</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-in">
+    <div>© 2026 Yuxin Gao · Mogura</div>
+    <div class="foot-links">
+      <a href="./">Privacy Policy</a>
+      <a href="support.html">Support</a>
+      <a href="mailto:hughadward123@gmail.com">Contact</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
